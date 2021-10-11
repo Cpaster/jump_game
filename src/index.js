@@ -1,5 +1,13 @@
+import JumpGame from './JumpGame';
 function main() {
-  console.log('test');
+  const canvas = document.querySelector('canvas');
+  new JumpGame({
+    canvas,
+    helper: {
+      axesHelpers: true,
+      cameraHelpers: true
+    }
+  });
 }
 
 main();

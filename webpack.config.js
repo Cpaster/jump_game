@@ -14,6 +14,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       title: 'JUMP GAME',
+      template: './assets/index.html'
     }),
   ],
 };
