@@ -39,6 +39,12 @@ class JumpGame {
       height,
     }));
     props.createProp();
+    window.addEventListener('touchstart', (e) => {
+      props.pressProp();
+    })
+    window.addEventListener('touchend', (e) => {
+      props.loosenProp();
+    })
   }
 }
 

@@ -4,7 +4,7 @@ import { computeRandomFromRange, computeRandomFromArr } from './lib';
 class Props {
   constructor({ world, canvas, stage, height, width }) {
     const [min, max] = [Math.floor(width / 6), Math.floor(width / 3.5)];
-
+    this.animationFrameId = null;
     this.world = world;
     this.canvas = canvas;
     this.stage = stage;
@@ -26,10 +26,37 @@ class Props {
     const box = new THREE.Mesh(boxGeometry, boxMetrial);
     box.castShadow = true;
     const [x, y] = this.getPropPosition(size);
-    box.position.set(x, y, propHeight);
+    box.geometry.translate(x, y, propHeight / 2);
     this.enterAnimation(box);
     props.push(box);
     return box;
+  }
+
+  pressProp(type) {
+    const { props, stage } = this;
+    const len = Props?.length;
+    const currentProp = props[0];
+    let height = 1;
+    const scaleHeight = () => {
+      this.animationFrameId = requestAnimationFrame(scaleHeight);
+      if (height <= 0.4) {
+        cancelAnimationFrame(this.animationFrameId);
+        return;
+      }
+      height = height - 0.008;
+      currentProp.scale.set(1, 1, height);
+      stage.render();
+    };
+    scaleHeight();
+  }
+
+  loosenProp() {
+    cancelAnimationFrame(this.animationFrameId);
+    const { props, stage } = this;
+    const len = Props?.length;
+    const currentProp = props[0];
+    currentProp.scale.set(1, 1, 1);
+    stage.render();
   }
 
   getPropPosition(boxSize) {
@@ -56,16 +83,16 @@ class Props {
   }
 
   enterAnimation(args) {
-    let clock = new THREE.Clock();
+
+    const { stage, propHeight } = this;
+    stage.add(args);
+
+    let animationFrameId;
+    const clock = new THREE.Clock();
     const name = `Box_${args.uuid}`;
     args.name = name;
-    const { stage } = this;
-    stage.add(args);
-    const {
-      position: { x, y, z },
-    } = args;
     const times = [0, 1, 1.5, 2];
-    const values = [z, z / 2, (z * 2) / 3, z / 2];
+    const values = [propHeight * 3, 0, propHeight / 6, 0];
     const posTrack = new THREE.KeyframeTrack(`${name}.position[z]`, times, values);
     const duration = 2;
     const clip = new THREE.AnimationClip('down', duration, [posTrack]);
@@ -77,10 +104,13 @@ class Props {
     animationAction.play();
     stage.render(mixer, clock);
     function render() {
-      requestAnimationFrame(render);
+      animationFrameId = requestAnimationFrame(render);
       stage.render();
       mixer.update(clock.getDelta());
     }
+    mixer.addEventListener('finished', e => {
+      cancelAnimationFrame(animationFrameId);
+    });
     render();
   }
 }
