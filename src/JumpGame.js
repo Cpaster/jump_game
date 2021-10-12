@@ -1,5 +1,6 @@
 import Stage from './Stage.js';
 import Props from './Props.js';
+import LittleMan from './LittleMan.js';
 
 class JumpGame {
   constructor({ canvas, helper: { cameraHelpers = false, axesHelpers = false } }) {
@@ -16,6 +17,17 @@ class JumpGame {
     // 初始化场景
     this.initStage();
     this.initProp();
+    this.ininLittleMan();
+    this.start();
+  }
+
+  start() {
+    const {props, littleMan} = this;
+    props.createProp(0);
+    props.createProp(0);
+    littleMan.createLittleMan();
+    littleMan.enterStage();
+    this.bindEvent();
   }
 
   initStage() {
@@ -32,19 +44,34 @@ class JumpGame {
   initProp() {
     const { canvas, stage, width, height } = this;
     const props = (this.props = new Props({
-      stage: this,
+      world: this,
       canvas,
       stage,
       width,
       height,
     }));
-    props.createProp();
-    window.addEventListener('touchstart', (e) => {
+    // props.createProp();
+  }
+
+  ininLittleMan() {
+    const { canvas, stage, width, height } = this;
+    this.littleMan = new LittleMan({
+      canvas,
+      stage,
+      width,
+      height,
+    });
+  }
+
+  bindEvent() {
+    const { props } = this;
+    window.addEventListener('touchstart', e => {
       props.pressProp();
-    })
-    window.addEventListener('touchend', (e) => {
+    });
+    window.addEventListener('touchend', e => {
       props.loosenProp();
-    })
+      props.createProp();
+    });
   }
 }
 

@@ -1,50 +1,54 @@
 import * as THREE from 'three';
-import { computeRandomFromRange, computeRandomFromArr } from './lib';
+import { computeRandomFromRange, computeRandomFromArr, animation } from './lib';
 
 class Props {
   constructor({ world, canvas, stage, height, width }) {
     const [min, max] = [Math.floor(width / 6), Math.floor(width / 3.5)];
+    this.isInitStatus = null;
     this.animationFrameId = null;
     this.world = world;
     this.canvas = canvas;
     this.stage = stage;
+    this.scaleRatio = 1;
     this.propSizeRange = [min, max];
     this.propHeight = Math.floor(max / 2);
-    this.distanceRange = [Math.floor(min / 2), max * 2];
+    this.distanceRange = [Math.floor(min / 2), max];
     this.colors = [0x67c23a, 0xe6a23c, 0xf56c6c, 0x909399, 0x409eff];
     this.directions = ['right', 'top'];
     this.props = [];
   }
 
-  createProp() {
+  createProp(val = null) {
+    this.isInitStatus = val === 0;
     const { props, propHeight, propSizeRange, colors } = this;
     const [min, max] = propSizeRange;
-    const size = computeRandomFromRange(min, max);
-    const color = computeRandomFromArr(colors);
+    const size = this.isInitStatus ? max : computeRandomFromRange(min, max);
+    const color = this.isInitStatus ? colors[0] : computeRandomFromArr(colors);
     const boxGeometry = new THREE.BoxBufferGeometry(size, size, propHeight);
     const boxMetrial = new THREE.MeshLambertMaterial({ color });
     const box = new THREE.Mesh(boxGeometry, boxMetrial);
     box.castShadow = true;
+    box.receiveShadow = true;
     const [x, y] = this.getPropPosition(size);
     box.geometry.translate(x, y, propHeight / 2);
-    this.enterAnimation(box);
+    box.position.set(x, y, 0);
+    this.enterStage(box);
     props.push(box);
     return box;
   }
 
-  pressProp(type) {
+  pressProp() {
     const { props, stage } = this;
-    const len = Props?.length;
-    const currentProp = props[0];
-    let height = 1;
+    const len = props?.length;
+    let currentProp = len <= 2 ? props[0] : props[len - 2];
     const scaleHeight = () => {
       this.animationFrameId = requestAnimationFrame(scaleHeight);
-      if (height <= 0.4) {
+      if (this.scaleRatio <= 0.4) {
         cancelAnimationFrame(this.animationFrameId);
         return;
       }
-      height = height - 0.008;
-      currentProp.scale.set(1, 1, height);
+      this.scaleRatio = this.scaleRatio - 0.008;
+      currentProp.scale.set(1, 1, this.scaleRatio);
       stage.render();
     };
     scaleHeight();
@@ -52,11 +56,22 @@ class Props {
 
   loosenProp() {
     cancelAnimationFrame(this.animationFrameId);
-    const { props, stage } = this;
-    const len = Props?.length;
-    const currentProp = props[0];
-    currentProp.scale.set(1, 1, 1);
-    stage.render();
+    const { props, stage, scaleRatio } = this;
+    const len = props?.length;
+    let currentProp = len <= 2 ? props[0] : props[len - 2];
+    animation('scale[z]', {
+      prop: currentProp,
+      name: 'BoxLoose',
+      duration: 2,
+      times: [0, 0.5, 1, 1.5, 2],
+      values: [scaleRatio, 1.07, 0.95, 1.01, 1],
+      onUpdate: () => {
+        stage.render();
+      },
+      onComplete: () => {
+        this.scaleRatio = 1;
+      },
+    });
   }
 
   getPropPosition(boxSize) {
@@ -68,50 +83,39 @@ class Props {
     const { distanceRange, directions } = this;
     const [min, max] = distanceRange;
     const distance = computeRandomFromRange(min, max);
-    const direction = computeRandomFromArr(directions);
+    const direction = this.isInitStatus ? 'right' : computeRandomFromArr(directions);
     const currentProp = props[props?.length - 1];
     const currentSize = new THREE.Vector3();
     new THREE.Box3().setFromObject(currentProp).getSize(currentSize);
     const { x: currentX, y: currentY } = currentProp.position;
     if (direction === 'right') {
-      const createX = currentX + currentSize?.x / 2 + distance + boxSize / 2;
+      const createX = currentX + distance + boxSize / 2;
       return [createX, currentY];
     } else if (direction === 'top') {
-      const createY = currentY + currentSize?.y / 2 + distance + boxSize / 2;
+      const createY = currentY + distance + boxSize / 2;
       return [currentX, createY];
     }
   }
 
-  enterAnimation(args) {
-
+  enterStage(args) {
     const { stage, propHeight } = this;
     stage.add(args);
-
-    let animationFrameId;
-    const clock = new THREE.Clock();
-    const name = `Box_${args.uuid}`;
-    args.name = name;
-    const times = [0, 1, 1.5, 2];
-    const values = [propHeight * 3, 0, propHeight / 6, 0];
-    const posTrack = new THREE.KeyframeTrack(`${name}.position[z]`, times, values);
-    const duration = 2;
-    const clip = new THREE.AnimationClip('down', duration, [posTrack]);
-    const mixer = new THREE.AnimationMixer(args);
-    const animationAction = mixer.clipAction(clip);
-    animationAction.setLoop(THREE.LoopOnce);
-    animationAction.clampWhenFinished = true;
-    animationAction.timeScale = 5;
-    animationAction.play();
-    stage.render(mixer, clock);
-    function render() {
-      animationFrameId = requestAnimationFrame(render);
+    if (this.isInitStatus) {
+      args.position.z = 0;
       stage.render();
-      mixer.update(clock.getDelta());
+      return;
     }
-    mixer.addEventListener('finished', e => {
-      cancelAnimationFrame(animationFrameId);
+    animation('position[z]', {
+      prop: args,
+      name: 'Box',
+      duration: 2,
+      times: [0, 1, 1.5, 2],
+      values: [propHeight * 3, 0, propHeight / 6, 0],
+      onUpdate: () => {
+        stage.render();
+      },
+      onComplete: () => {},
     });
-    render();
   }
 }
 

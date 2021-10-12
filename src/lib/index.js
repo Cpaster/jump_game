@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export const resizeRendererToDisplaySize = renderer => {
   const canvas = renderer.domElement;
   const width = canvas.clientWidth;
@@ -35,4 +37,41 @@ export function computeRandomFromArr(arr) {
   if (arr?.length) {
     return arr[Math.floor(Math.random() * arr?.length)] || arr[0] || '';
   }
+}
+
+export function animation(
+  key,
+  {
+    prop,
+    duration = 2,
+    timeScale = 5,
+    name = 'Box',
+    times = [],
+    values = [],
+    onUpdate = () => {},
+    onComplete = () => {},
+  }
+) {
+  let animationFrameId;
+  const clock = new THREE.Clock();
+  const propName = `${name}_${prop.uuid}`;
+  prop.name = propName;
+  const posTrack = new THREE.KeyframeTrack(`${propName}.${key}`, times, values);
+  const clip = new THREE.AnimationClip('default', duration, [posTrack]);
+  const mixer = new THREE.AnimationMixer(prop);
+  const animationAction = mixer.clipAction(clip);
+  animationAction.setLoop(THREE.LoopOnce);
+  animationAction.clampWhenFinished = true;
+  animationAction.timeScale = timeScale;
+  animationAction.play();
+  function render() {
+    animationFrameId = requestAnimationFrame(render);
+    onUpdate && onUpdate();
+    mixer.update(clock.getDelta());
+  }
+  mixer.addEventListener('finished', e => {
+    cancelAnimationFrame(animationFrameId);
+    onComplete && onComplete();
+  });
+  render();
 }
