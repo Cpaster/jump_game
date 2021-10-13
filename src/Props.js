@@ -51,8 +51,8 @@ class Props {
     return {
       key: 'scale[z]',
       prop: currentProp,
-      name: `BoxLoose${len - 2}`
-    }
+      name: `BoxLoose${len - 2}`,
+    };
   }
 
   computePropPosition(boxSize) {
@@ -64,7 +64,7 @@ class Props {
     const { distanceRange, directions } = this;
     const [min, max] = distanceRange;
     const distance = computeRandomFromRange(min, max);
-    const direction = this.isInitStatus ? 'right' : computeRandomFromArr(directions);
+    const direction = (this.direction = this.isInitStatus ? 'right' : computeRandomFromArr(directions));
     const currentProp = props[props?.length - 1];
     const { x: currentX, y: currentY } = currentProp.position;
     if (direction === 'right') {
@@ -111,6 +111,10 @@ class Props {
 
   getPropPosition(prop) {
     return prop?.position;
+  }
+
+  getNewCreateDirection() {
+    return this.direction;
   }
 }
 

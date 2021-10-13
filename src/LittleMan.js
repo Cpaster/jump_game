@@ -11,11 +11,13 @@ class LittleMan {
     this.width = width;
     this.world = world;
     this.color = color;
-    this.jumpAngle = Math.PI / 3;
+    this.isJumping = false;
+    this.jumpAngle = Math.PI / 4;
     this.strength = 0;
     this.headerHeight = width * 0.25;
     this.G = 9.8;
     this.ratio = 1;
+    this.currentLittleManPosition = null;
     this.animationFrameId = null;
     this.littleManMesh = null;
     this.littleManmaterial = null;
@@ -71,7 +73,7 @@ class LittleMan {
     const { littleManMesh, bodyMesh, headerMesh, ratio, props, headerHeight } = this;
     const z = props.getPropHeight() * ratio;
     littleManMesh.position.z = z;
-    bodyMesh.scale.set(1 + ratio / 10, 1 + ratio / 10, ratio);
+    bodyMesh.scale.set(2 - ratio, 2 - ratio, ratio);
     const box = new THREE.Box3();
     const size = new THREE.Vector3();
     box.setFromObject(bodyMesh).getSize(size);
@@ -80,13 +82,43 @@ class LittleMan {
 
   jump() {
     const { littleManMesh, props, headerHeight, headerMesh, bodyMesh } = this;
+    this.isJumping = true;
     littleManMesh.position.z = props.getPropHeight();
+    const direction = props.getNewCreateDirection();
     headerMesh.position.z = headerHeight;
     bodyMesh.scale.set(1, 1, 1);
+    let animationFrameId;
+    const vx = this.strength * Math.cos(this.jumpAngle);
+    const vy = this.strength * Math.sin(this.jumpAngle);
+    let t = 0;
+    this.littleManMesh.rotateY(0);
+    const throwLine = () => {
+      t = t + 0.3;
+      animationFrameId = requestAnimationFrame(throwLine);
+      const h = vy * t - 0.5 * this.G * t * t;
+      const distance = vx * t - 0.5 * 1 * t * t;
+      this.littleManMesh.position.z = props.getPropHeight() + h;
+      if (h < 0.1) {
+        this.isJumping = false;
+        cancelAnimationFrame(animationFrameId);
+        t = 0;
+      }
+      if (direction === 'right') {
+        this.littleManMesh.position.x = this.currentLittleManPosition.x + distance;
+      } else if (direction === 'top') {
+        this.littleManMesh.position.y = this.currentLittleManPosition.y + distance;
+      }
+      this.stage.render();
+    };
+    throwLine();
   }
 
   energyStorage() {
     const { props, stage } = this;
+    if (this.isJumping) {
+      return;
+    }
+    this.currentLittleManPosition = { ...this.littleManMesh.position };
     const addPrower = () => {
       this.animationFrameId = requestAnimationFrame(addPrower);
       if (this.ratio <= 0.5) {
@@ -105,7 +137,12 @@ class LittleMan {
     cancelAnimationFrame(this.animationFrameId);
     const { props, stage, ratio } = this;
     const { prop, key, name } = props.loosenProp();
+    if (this.isJumping) {
+      return;
+    }
+    // 小人跳跳
     this.jump();
+    // 放松道具
     animation(prop, [{ key, name }], {
       duration: 2,
       times: [0, 0.5, 1, 1.5, 2],
@@ -117,6 +154,7 @@ class LittleMan {
         this.ratio = 1;
       },
     });
+    // 创建添加道具
     props.createProp();
   }
 
