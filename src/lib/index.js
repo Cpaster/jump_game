@@ -40,24 +40,21 @@ export function computeRandomFromArr(arr) {
 }
 
 export function animation(
-  key,
-  {
-    prop,
-    duration = 2,
-    timeScale = 5,
-    name = 'Box',
-    times = [],
-    values = [],
-    onUpdate = () => {},
-    onComplete = () => {},
-  }
+  prop,
+  propArr = [],
+  { duration = 2, timeScale = 5, times = [], values = [], onUpdate = () => {}, onComplete = () => {} }
 ) {
   let animationFrameId;
   const clock = new THREE.Clock();
-  const propName = `${name}_${prop.uuid}`;
-  prop.name = propName;
-  const posTrack = new THREE.KeyframeTrack(`${propName}.${key}`, times, values);
-  const clip = new THREE.AnimationClip('default', duration, [posTrack]);
+
+  const tracks = propArr.map(propItem => {
+    const { name, key } = propItem;
+    const propName = `${name}_${prop.uuid}`;
+    prop.name = propName;
+    const posTrack = new THREE.KeyframeTrack(`${propName}.${key}`, times, values);
+    return posTrack;
+  });
+  const clip = new THREE.AnimationClip('default', duration, tracks || []);
   const mixer = new THREE.AnimationMixer(prop);
   const animationAction = mixer.clipAction(clip);
   animationAction.setLoop(THREE.LoopOnce);

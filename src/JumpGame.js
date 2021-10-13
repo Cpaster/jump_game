@@ -27,7 +27,6 @@ class JumpGame {
     props.createProp(0);
     littleMan.createLittleMan();
     littleMan.enterStage();
-    this.bindEvent();
   }
 
   initStage() {
@@ -54,23 +53,13 @@ class JumpGame {
   }
 
   ininLittleMan() {
-    const { canvas, stage, width, height } = this;
+    const { canvas, stage, width, height, props } = this;
     this.littleMan = new LittleMan({
       canvas,
       stage,
+      props,
       width,
       height,
-    });
-  }
-
-  bindEvent() {
-    const { props } = this;
-    window.addEventListener('touchstart', e => {
-      props.pressProp();
-    });
-    window.addEventListener('touchend', e => {
-      props.loosenProp();
-      props.createProp();
     });
   }
 }

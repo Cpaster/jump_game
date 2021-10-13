@@ -29,7 +29,7 @@ class Props {
     const box = new THREE.Mesh(boxGeometry, boxMetrial);
     box.castShadow = true;
     box.receiveShadow = true;
-    const [x, y] = this.getPropPosition(size);
+    const [x, y] = this.computePropPosition(size);
     box.geometry.translate(x, y, propHeight / 2);
     box.position.set(x, y, 0);
     this.enterStage(box);
@@ -37,44 +37,25 @@ class Props {
     return box;
   }
 
-  pressProp() {
+  pressProp(ratio) {
     const { props, stage } = this;
     const len = props?.length;
     let currentProp = len <= 2 ? props[0] : props[len - 2];
-    const scaleHeight = () => {
-      this.animationFrameId = requestAnimationFrame(scaleHeight);
-      if (this.scaleRatio <= 0.4) {
-        cancelAnimationFrame(this.animationFrameId);
-        return;
-      }
-      this.scaleRatio = this.scaleRatio - 0.008;
-      currentProp.scale.set(1, 1, this.scaleRatio);
-      stage.render();
-    };
-    scaleHeight();
+    currentProp.scale.set(1, 1, Number(ratio));
   }
 
   loosenProp() {
-    cancelAnimationFrame(this.animationFrameId);
-    const { props, stage, scaleRatio } = this;
+    const { props } = this;
     const len = props?.length;
     let currentProp = len <= 2 ? props[0] : props[len - 2];
-    animation('scale[z]', {
+    return {
+      key: 'scale[z]',
       prop: currentProp,
-      name: 'BoxLoose',
-      duration: 2,
-      times: [0, 0.5, 1, 1.5, 2],
-      values: [scaleRatio, 1.07, 0.95, 1.01, 1],
-      onUpdate: () => {
-        stage.render();
-      },
-      onComplete: () => {
-        this.scaleRatio = 1;
-      },
-    });
+      name: `BoxLoose${len - 2}`
+    }
   }
 
-  getPropPosition(boxSize) {
+  computePropPosition(boxSize) {
     // 如果是props中没有元素则默认没有
     const { props } = this;
     if (!props?.length) {
@@ -85,8 +66,6 @@ class Props {
     const distance = computeRandomFromRange(min, max);
     const direction = this.isInitStatus ? 'right' : computeRandomFromArr(directions);
     const currentProp = props[props?.length - 1];
-    const currentSize = new THREE.Vector3();
-    new THREE.Box3().setFromObject(currentProp).getSize(currentSize);
     const { x: currentX, y: currentY } = currentProp.position;
     if (direction === 'right') {
       const createX = currentX + distance + boxSize / 2;
@@ -105,17 +84,33 @@ class Props {
       stage.render();
       return;
     }
-    animation('position[z]', {
-      prop: args,
-      name: 'Box',
-      duration: 2,
-      times: [0, 1, 1.5, 2],
-      values: [propHeight * 3, 0, propHeight / 6, 0],
-      onUpdate: () => {
-        stage.render();
+    animation(
+      args,
+      [
+        {
+          key: 'position[z]',
+          name: 'Box',
+        },
+      ],
+      {
+        duration: 2,
+        times: [0, 1, 1.5, 2],
+        values: [propHeight * 3, 0, propHeight / 6, 0],
+        onUpdate: () => {
+          stage.render();
+        },
+        onComplete: () => {},
       },
-      onComplete: () => {},
-    });
+      stage
+    );
+  }
+
+  getPropHeight() {
+    return this.propHeight;
+  }
+
+  getPropPosition(prop) {
+    return prop?.position;
   }
 }
 
