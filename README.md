@@ -1,2 +1,2 @@
 # jump_game
-jump game demo
+jump game
