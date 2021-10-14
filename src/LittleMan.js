@@ -48,7 +48,10 @@ class LittleMan {
     bodyMidGeo.translate(0, Math.floor((width * 3) / 21), 0);
     const bodyTopGeo = new THREE.SphereGeometry(width * 0.04, 50, 50);
     bodyTopGeo.translate(0, Math.floor((width * 3) / 18), 0);
-    const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries([bodyTopGeo, bodyMidGeo, bodyBottomGeo], false);
+    const mergedGeometry = (this.mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(
+      [bodyTopGeo, bodyMidGeo, bodyBottomGeo],
+      false
+    ));
     mergedGeometry.rotateX(Math.PI / 2);
     const bodyMesh = (this.bodyMesh = new THREE.Mesh(mergedGeometry, material));
     bodyMesh.castShadow = true;
@@ -89,19 +92,21 @@ class LittleMan {
     bodyMesh.scale.set(1, 1, 1);
     let animationFrameId;
     const vx = this.strength * Math.cos(this.jumpAngle);
-    const vy = this.strength * Math.sin(this.jumpAngle);
+    const vy = this.strength * Math.sin(this.jumpAngle) < 60 ? 60 : this.strength * Math.sin(this.jumpAngle);
     let t = 0;
-    this.littleManMesh.rotateY(0);
     const throwLine = () => {
       t = t + 0.3;
       animationFrameId = requestAnimationFrame(throwLine);
       const h = vy * t - 0.5 * this.G * t * t;
-      const distance = vx * t - 0.5 * 1 * t * t;
+      const distance = vx * t - 0.5 * 2 * t * t;
       this.littleManMesh.position.z = props.getPropHeight() + h;
-      if (h < 0.1) {
+      if (h < 0) {
         this.isJumping = false;
         cancelAnimationFrame(animationFrameId);
         t = 0;
+      }
+      if (t - 0.3 <= Math.PI * 2) {
+        this.bodyMesh.rotation.y = t;
       }
       if (direction === 'right') {
         this.littleManMesh.position.x = this.currentLittleManPosition.x + distance;
@@ -143,6 +148,7 @@ class LittleMan {
     // 小人跳跳
     this.jump();
     // 放松道具
+    let times = 0;
     animation(prop, [{ key, name }], {
       duration: 2,
       times: [0, 0.5, 1, 1.5, 2],
