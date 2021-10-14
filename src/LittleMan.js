@@ -48,12 +48,12 @@ class LittleMan {
     bodyMidGeo.translate(0, Math.floor((width * 3) / 21), 0);
     const bodyTopGeo = new THREE.SphereGeometry(width * 0.04, 50, 50);
     bodyTopGeo.translate(0, Math.floor((width * 3) / 18), 0);
-    const mergedGeometry = (this.mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(
+    const bodyGeometry = (this.bodyGeometry = BufferGeometryUtils.mergeBufferGeometries(
       [bodyTopGeo, bodyMidGeo, bodyBottomGeo],
       false
     ));
-    mergedGeometry.rotateX(Math.PI / 2);
-    const bodyMesh = (this.bodyMesh = new THREE.Mesh(mergedGeometry, material));
+    bodyGeometry.rotateX(Math.PI / 2);
+    const bodyMesh = (this.bodyMesh = new THREE.Mesh(bodyGeometry, material));
     bodyMesh.castShadow = true;
     const box = new THREE.Box3();
     const size = new THREE.Vector3();
@@ -65,9 +65,25 @@ class LittleMan {
 
   enterStage() {
     const { stage, props } = this;
-    const { littleManMesh } = this;
+    const { littleManMesh, headerMesh, bodyMesh } = this;
+    // bodyMesh.position.z = bodyMesh.position.z + props.getPropHeight();
+    // headerMesh.position.z = headerMesh.position.z + props.getPropHeight();
     littleManMesh.position.z = props.getPropHeight();
     stage.add(littleManMesh);
+    {
+      const bodybox = new THREE.Box3().setFromObject(bodyMesh);
+      const headerbox = new THREE.Box3().setFromObject(headerMesh);
+      const manbox = new THREE.Box3().setFromObject(littleManMesh);
+      const bodyhelper = new THREE.Box3Helper(bodybox, 0xffff00);
+      const headerhelper = new THREE.Box3Helper(headerbox, 'red');
+      const manhelper = new THREE.Box3Helper(manbox, 'green');
+      stage.add(bodyhelper);
+      stage.add(headerhelper);
+      stage.add(manhelper);
+      console.log(bodyMesh.position);
+      console.log(headerMesh.position);
+      console.log(littleManMesh.position);
+    }
     this.bindEvent();
     stage.render();
   }
@@ -84,7 +100,7 @@ class LittleMan {
   }
 
   jump() {
-    const { littleManMesh, props, headerHeight, headerMesh, bodyMesh } = this;
+    const { littleManMesh, props, headerHeight, littleManBodyHeight, headerMesh, bodyMesh } = this;
     this.isJumping = true;
     littleManMesh.position.z = props.getPropHeight();
     const direction = props.getNewCreateDirection();
@@ -94,6 +110,7 @@ class LittleMan {
     const vx = this.strength * Math.cos(this.jumpAngle);
     const vy = this.strength * Math.sin(this.jumpAngle) < 60 ? 60 : this.strength * Math.sin(this.jumpAngle);
     let t = 0;
+
     const throwLine = () => {
       t = t + 0.3;
       animationFrameId = requestAnimationFrame(throwLine);
@@ -105,12 +122,15 @@ class LittleMan {
         cancelAnimationFrame(animationFrameId);
         t = 0;
       }
-      if (t - 0.3 <= Math.PI * 2) {
-        this.bodyMesh.rotation.y = t;
-      }
       if (direction === 'right') {
+        if (t - 0.3 <= Math.PI * 2) {
+          this.littleManMesh.rotation.y = t;
+        }
         this.littleManMesh.position.x = this.currentLittleManPosition.x + distance;
       } else if (direction === 'top') {
+        if (t - 0.3 <= Math.PI * 2) {
+          this.littleManMesh.rotation.x = -t;
+        }
         this.littleManMesh.position.y = this.currentLittleManPosition.y + distance;
       }
       this.stage.render();
