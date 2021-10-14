@@ -38,7 +38,7 @@ class Props {
   }
 
   pressProp(ratio) {
-    const { props, stage } = this;
+    const { props } = this;
     const len = props?.length;
     let currentProp = len <= 2 ? props[0] : props[len - 2];
     currentProp.scale.set(1, 1, Number(ratio));
