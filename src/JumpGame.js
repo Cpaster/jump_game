@@ -49,7 +49,6 @@ class JumpGame {
       width,
       height,
     }));
-    // props.createProp();
   }
 
   ininLittleMan() {
