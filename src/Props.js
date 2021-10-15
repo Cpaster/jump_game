@@ -30,7 +30,7 @@ class Props {
     box.castShadow = true;
     box.receiveShadow = true;
     const [x, y] = this.computePropPosition(size);
-    box.geometry.translate(x, y, propHeight / 2);
+    box.geometry.translate(0, 0, propHeight / 2);
     box.position.set(x, y, 0);
     this.enterStage(box);
     props.push(box);
@@ -67,11 +67,13 @@ class Props {
     const direction = (this.direction = this.isInitStatus ? 'right' : computeRandomFromArr(directions));
     const currentProp = props[props?.length - 1];
     const { x: currentX, y: currentY } = currentProp.position;
+    const currentSize = new THREE.Vector3();
+    new THREE.Box3().setFromObject(currentProp).getSize(currentSize);
     if (direction === 'right') {
-      const createX = currentX + distance + boxSize / 2;
+      const createX = currentX + currentSize?.x / 2 + distance + boxSize / 2;
       return [createX, currentY];
     } else if (direction === 'top') {
-      const createY = currentY + distance + boxSize / 2;
+      const createY = currentY + currentSize?.y / 2 + distance + boxSize / 2;
       return [currentX, createY];
     }
   }
@@ -109,8 +111,12 @@ class Props {
     return this.propHeight;
   }
 
-  getPropPosition(prop) {
-    return prop?.position;
+  // 获取下一个道具
+  getNextProp() {
+    const len = this.props?.length;
+    console.log(len);
+    let nextProp = len <= 2 && len > 0 ? this.props[1] : this.props[len - 1];
+    return nextProp || null;
   }
 
   getNewCreateDirection() {

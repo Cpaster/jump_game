@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils';
 import { animation } from './lib';
+import { getVectorAngle, subtract } from './lib/math';
 
 class LittleMan {
   constructor({ world, canvas, stage, props, height, width, color = 0x386899 }) {
@@ -80,9 +81,6 @@ class LittleMan {
       stage.add(bodyhelper);
       stage.add(headerhelper);
       stage.add(manhelper);
-      console.log(bodyMesh.position);
-      console.log(headerMesh.position);
-      console.log(littleManMesh.position);
     }
     this.bindEvent();
     stage.render();
@@ -100,38 +98,48 @@ class LittleMan {
   }
 
   jump() {
-    const { littleManMesh, props, headerHeight, littleManBodyHeight, headerMesh, bodyMesh } = this;
+    const { littleManMesh, props, headerHeight, headerMesh, bodyMesh } = this;
     this.isJumping = true;
     littleManMesh.position.z = props.getPropHeight();
     const direction = props.getNewCreateDirection();
+    const angle = this.getJumpdirectionAngle();
     headerMesh.position.z = headerHeight;
     bodyMesh.scale.set(1, 1, 1);
     let animationFrameId;
     const vx = this.strength * Math.cos(this.jumpAngle);
     const vy = this.strength * Math.sin(this.jumpAngle) < 60 ? 60 : this.strength * Math.sin(this.jumpAngle);
     let t = 0;
-
     const throwLine = () => {
       t = t + 0.3;
       animationFrameId = requestAnimationFrame(throwLine);
       const h = vy * t - 0.5 * this.G * t * t;
       const distance = vx * t - 0.5 * 2 * t * t;
-      this.littleManMesh.position.z = props.getPropHeight() + h;
       if (h < 0) {
         this.isJumping = false;
+        console.log('start', this.currentLittleManPosition);
+        console.log('end', this.littleManMesh.position);
         cancelAnimationFrame(animationFrameId);
         t = 0;
       }
+      const { x, y } = this.currentLittleManPosition;
       if (direction === 'right') {
+        this.littleManMesh.position.set(
+          x + distance * Math.cos(angle),
+          y + distance * Math.sin(angle),
+          props.getPropHeight() + h
+        );
         if (t - 0.3 <= Math.PI * 2) {
           this.littleManMesh.rotation.y = t;
         }
-        this.littleManMesh.position.x = this.currentLittleManPosition.x + distance;
       } else if (direction === 'top') {
+        this.littleManMesh.position.set(
+          x - distance * Math.sin(angle),
+          y + distance * Math.cos(angle),
+          props.getPropHeight() + h
+        );
         if (t - 0.3 <= Math.PI * 2) {
           this.littleManMesh.rotation.x = -t;
         }
-        this.littleManMesh.position.y = this.currentLittleManPosition.y + distance;
       }
       this.stage.render();
     };
@@ -182,6 +190,28 @@ class LittleMan {
     });
     // 创建添加道具
     props.createProp();
+  }
+
+  getJumpdirectionAngle() {
+    const { props, currentLittleManPosition } = this;
+    // console.log(currentLittleManPosition);
+    const targetPropPosition = props.getNextProp()?.position;
+    console.log('targetPropPosition', targetPropPosition);
+    const directionVector3 = subtract(targetPropPosition, currentLittleManPosition);
+    // 设置一下最终目标的z为0
+    directionVector3.z = 0;
+    const direction = props.getNewCreateDirection();
+    let angle;
+    if (direction === 'top') {
+      angle = getVectorAngle({ x: 0, y: 1, z: 0 }, directionVector3);
+      // console.log('deg', angle !== 0 ? (angle / Math.PI) * 180 : 0);
+    } else {
+      angle = getVectorAngle({ x: 1, y: 0, z: 0 }, directionVector3);
+      // console.log('angle', angle);
+      // console.log('deg', angle !== 0 ? (angle / Math.PI) * 180 : 0);
+    }
+    console.log('angle', (angle / Math.PI) * 180);
+    return angle;
   }
 
   bindEvent() {
