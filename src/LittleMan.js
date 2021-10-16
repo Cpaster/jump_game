@@ -4,8 +4,8 @@ import { animation } from './lib';
 import { getVectorAngle, subtract } from './lib/math';
 
 class LittleMan {
-  constructor({ world, canvas, stage, props, height, width, color = 0x386899 }) {
-    this.stage = stage;
+  constructor({ world, canvas, props, height, width, color = 0x386899 }) {
+    this.stage = null;
     this.props = props;
     this.canvas = canvas;
     this.height = height;
@@ -61,27 +61,13 @@ class LittleMan {
     box.setFromObject(bodyMesh).getSize(size);
     this.littleManBodyHeight = size?.z || 0;
     littleManMesh.add(bodyMesh);
-    stage.render();
   }
 
-  enterStage() {
-    const { stage, props } = this;
-    const { littleManMesh, headerMesh, bodyMesh } = this;
-    // bodyMesh.position.z = bodyMesh.position.z + props.getPropHeight();
-    // headerMesh.position.z = headerMesh.position.z + props.getPropHeight();
+  enterStage(stage) {
+    const { props, littleManMesh } = this;
+    this.stage = stage;
     littleManMesh.position.z = props.getPropHeight();
     stage.add(littleManMesh);
-    {
-      const bodybox = new THREE.Box3().setFromObject(bodyMesh);
-      const headerbox = new THREE.Box3().setFromObject(headerMesh);
-      const manbox = new THREE.Box3().setFromObject(littleManMesh);
-      const bodyhelper = new THREE.Box3Helper(bodybox, 0xffff00);
-      const headerhelper = new THREE.Box3Helper(headerbox, 'red');
-      const manhelper = new THREE.Box3Helper(manbox, 'green');
-      stage.add(bodyhelper);
-      stage.add(headerhelper);
-      stage.add(manhelper);
-    }
     this.bindEvent();
     stage.render();
   }
@@ -97,7 +83,7 @@ class LittleMan {
     headerMesh.position.z = headerHeight - (this.littleManBodyHeight - size.z);
   }
 
-  jump() {
+  jump(onComplete = () => {}) {
     const { littleManMesh, props, headerHeight, headerMesh, bodyMesh } = this;
     this.isJumping = true;
     littleManMesh.position.z = props.getPropHeight();
@@ -116,9 +102,8 @@ class LittleMan {
       const distance = vx * t - 0.5 * 2 * t * t;
       if (h < 0) {
         this.isJumping = false;
-        console.log('start', this.currentLittleManPosition);
-        console.log('end', this.littleManMesh.position);
         cancelAnimationFrame(animationFrameId);
+        onComplete && onComplete();
         t = 0;
       }
       const { x, y } = this.currentLittleManPosition;
@@ -173,10 +158,14 @@ class LittleMan {
     if (this.isJumping) {
       return;
     }
-    // 小人跳跳
-    this.jump();
+
+    // 小人跳跃
+    this.jump(() => {
+      // 跳跃完成添加道具
+      props.createProp();
+    });
+
     // 放松道具
-    let times = 0;
     animation(prop, [{ key, name }], {
       duration: 2,
       times: [0, 0.5, 1, 1.5, 2],
@@ -188,29 +177,18 @@ class LittleMan {
         this.ratio = 1;
       },
     });
-    // 创建添加道具
-    props.createProp();
   }
 
   getJumpdirectionAngle() {
     const { props, currentLittleManPosition } = this;
-    // console.log(currentLittleManPosition);
     const targetPropPosition = props.getNextProp()?.position;
-    console.log('targetPropPosition', targetPropPosition);
     const directionVector3 = subtract(targetPropPosition, currentLittleManPosition);
     // 设置一下最终目标的z为0
     directionVector3.z = 0;
     const direction = props.getNewCreateDirection();
     let angle;
-    if (direction === 'top') {
-      angle = getVectorAngle({ x: 0, y: 1, z: 0 }, directionVector3);
-      // console.log('deg', angle !== 0 ? (angle / Math.PI) * 180 : 0);
-    } else {
-      angle = getVectorAngle({ x: 1, y: 0, z: 0 }, directionVector3);
-      // console.log('angle', angle);
-      // console.log('deg', angle !== 0 ? (angle / Math.PI) * 180 : 0);
-    }
-    console.log('angle', (angle / Math.PI) * 180);
+    let baseVector = direction === 'top' ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
+    angle = getVectorAngle(baseVector, directionVector3);
     return angle;
   }
 

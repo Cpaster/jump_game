@@ -4,10 +4,11 @@ import { resizeRendererToDisplaySize } from './lib';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 class Stage {
-  constructor({ canvas, width, height, cameraHelpers, axesHelpers }) {
+  constructor({ canvas, width, height, props, cameraHelpers, axesHelpers }) {
     this.canvas = canvas;
     this.height = height;
     this.width = width;
+    this.props = props;
     this.axesHelpers = axesHelpers;
     this.cameraHelpers = cameraHelpers;
     this.renderer = null;
@@ -57,13 +58,16 @@ class Stage {
     scene.add(new THREE.AmbientLight(0xffffff, 0.4));
   }
 
-  createCamera(near = 0.1, far = 2000) {
+  createCamera(near = 0.1) {
     const { height, width, canvas, scene } = this;
+    const far = width * 10;
     const camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, near, far);
+
     // 稍后调整相机位置
-    camera.position.set(-370, -300, 300);
+    camera.position.set(-width * 4, -height * 2, height * 2);
     camera.lookAt(scene.position);
-    camera.up.set(10,10,100);
+    camera.up.set(10, 10, 100);
+    // camera.up.set(-width * 1.5, -height / 2, height / 2);
     this.camera = camera;
 
     if (this.cameraHelpers) {
@@ -78,12 +82,16 @@ class Stage {
     this.scene.add(camera);
   }
 
+  moveCamera() {
+    const { props } = this;
+    console.log(props.getNextProp().position);
+    console.log(props.getCurrentProp().position);
+  }
+
   createPlane() {
-    const planeGeometry = new THREE.PlaneBufferGeometry(10e2, 10e2, 1, 1);
+    const planeGeometry = new THREE.PlaneBufferGeometry(this.width * 4, this.height * 2, 1, 1);
     const planeMeterial = new THREE.MeshLambertMaterial({ color: 0xffffff, side: THREE.DoubleSide });
     const plane = new THREE.Mesh(planeGeometry, planeMeterial);
-    // plane.rotation.x = -0.5 * Math.PI;
-    // plane.position.y = -0.1;
     plane.receiveShadow = true;
     this.plane = plane;
     this.add(plane);

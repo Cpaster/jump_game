@@ -12,10 +12,8 @@ export const getVectorAngle = (startVector, endVector) => {
   const angleDirection = vectorCross(startNormalVector, endNormalVector);
   let angle;
   if (angleDirection.z < 0) {
-    console.log('direction', -1);
     angle = -1 * Math.acos(cosAngleVal)
   } else {
-    console.log('direction', 1);
     angle = Math.acos(cosAngleVal)
   }
   return angle;

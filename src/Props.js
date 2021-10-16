@@ -8,7 +8,7 @@ class Props {
     this.animationFrameId = null;
     this.world = world;
     this.canvas = canvas;
-    this.stage = stage;
+    this.stage = null;
     this.scaleRatio = 1;
     this.propSizeRange = [min, max];
     this.propHeight = Math.floor(max / 2);
@@ -18,7 +18,10 @@ class Props {
     this.props = [];
   }
 
-  createProp(val = null) {
+  createProp(stage, val = null) {
+    if (!this.stage) {
+      this.stage = stage;
+    }
     this.isInitStatus = val === 0;
     const { props, propHeight, propSizeRange, colors } = this;
     const [min, max] = propSizeRange;
@@ -32,26 +35,22 @@ class Props {
     const [x, y] = this.computePropPosition(size);
     box.geometry.translate(0, 0, propHeight / 2);
     box.position.set(x, y, 0);
-    this.enterStage(box);
     props.push(box);
+    this.enterStage(box);
     return box;
   }
 
   pressProp(ratio) {
-    const { props } = this;
-    const len = props?.length;
-    let currentProp = len <= 2 ? props[0] : props[len - 2];
+    let currentProp = this.getCurrentProp();
     currentProp.scale.set(1, 1, Number(ratio));
   }
 
   loosenProp() {
-    const { props } = this;
-    const len = props?.length;
-    let currentProp = len <= 2 ? props[0] : props[len - 2];
+    let currentProp = this.getCurrentProp();
     return {
       key: 'scale[z]',
       prop: currentProp,
-      name: `BoxLoose${len - 2}`,
+      name: `BoxLoose_${currentProp.uuid}`,
     };
   }
 
@@ -102,8 +101,7 @@ class Props {
           stage.render();
         },
         onComplete: () => {},
-      },
-      stage
+      }
     );
   }
 
@@ -111,10 +109,15 @@ class Props {
     return this.propHeight;
   }
 
+  getCurrentProp() {
+    const { props } = this;
+    const len = props?.length;
+    return len <= 2 ? props[0] : props[len - 2];
+  }
+
   // 获取下一个道具
   getNextProp() {
     const len = this.props?.length;
-    console.log(len);
     let nextProp = len <= 2 && len > 0 ? this.props[1] : this.props[len - 1];
     return nextProp || null;
   }

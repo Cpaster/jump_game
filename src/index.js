@@ -7,7 +7,7 @@ function main() {
       axesHelpers: true,
       cameraHelpers: true
     }
-  });
+  }).start();
 }
 
 main();

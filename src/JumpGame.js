@@ -15,26 +15,27 @@ class JumpGame {
 
   init() {
     // 初始化场景
-    this.initStage();
     this.initProp();
     this.ininLittleMan();
-    this.start();
+    this.initStage();
   }
 
   start() {
-    const {props, littleMan} = this;
-    props.createProp(0);
-    props.createProp(0);
+    const { props, littleMan, stage } = this;
+    props.createProp(stage, 0);
+    props.createProp(stage, 0);
+    stage.moveCamera();
     littleMan.createLittleMan();
-    littleMan.enterStage();
+    littleMan.enterStage(stage);
   }
 
   initStage() {
-    const { canvas, width, height, cameraHelpers, axesHelpers } = this;
+    const { canvas, width, height, cameraHelpers, axesHelpers, props } = this;
     this.stage = new Stage({
       canvas,
       width,
       height,
+      props,
       cameraHelpers,
       axesHelpers,
     });
