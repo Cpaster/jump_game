@@ -114,7 +114,6 @@ class Props {
   getCurrentProp() {
     const { props } = this;
     const len = props?.length;
-    console.log(len);
     return len <= 2 ? props[0] : props[len - 2];
   }
 

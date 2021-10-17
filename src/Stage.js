@@ -54,6 +54,7 @@ class Stage {
     light.shadow.camera.far = 1000;
     light.shadow.mapSize.width = 1600;
     light.shadow.mapSize.height = 1600;
+    this.light = light;
     const lightHelper = new THREE.DirectionalLightHelper(light, 4);
     scene.add(lightHelper);
     scene.add(new THREE.AmbientLight(0xffffff, 0.4));
@@ -82,6 +83,17 @@ class Stage {
     this.scene.add(camera);
   }
 
+  movePlaneAndLight(vector) {
+    const { x, y } = vector;
+    const {x: positionx, y: positiony, z} = this.plane.position;
+    const {x: lightPostionX, y: lightPostionY} = this.light.position;
+    const {x: lighttargetX, y: lighttargetY} = this.light.target;
+    this.plane.position.set(positionx + x, positiony + y, z);
+    // this.light.position.set(lightPostionX + x, lightPostionY + y);
+    // this.light.target.set(lighttargetX + x, lighttargetY + y);
+    this.render();
+  }
+
   moveCamera(isStart, onComplete = () => {}) {
     const { props, camera, cameraLookAtPostion } = this;
     const { x: startPropX, y: startPropY } = props.getCurrentProp().position;
@@ -92,7 +104,12 @@ class Stage {
     const { x: lookAtPostionX, y: lookAtPostionY } = cameraLookAtPostion;
     const directionVector = { x: Math.floor(targetX - lookAtPostionX), y: Math.floor(targetY - lookAtPostionY) };
     const { x: cameraPositionX, y: cameraPositionY, z } = camera.position;
-    const cameraTargetPosition = { x: Math.floor(cameraPositionX + directionVector.x), y: Math.floor(cameraPositionY + directionVector.y), z };
+    const cameraTargetPosition = {
+      x: Math.floor(cameraPositionX + directionVector.x),
+      y: Math.floor(cameraPositionY + directionVector.y),
+      z,
+    };
+    this.movePlaneAndLight(directionVector);
     const animator = new Animation({
       duration: 500,
       iterations: 1,
@@ -100,37 +117,40 @@ class Stage {
 
     if (isStart === 0) {
       camera.position.set(cameraTargetPosition.x, cameraTargetPosition.y, cameraTargetPosition.z);
-      camera.lookAt(targetX, targetY, cameraLookAtPostion?.z );
+      camera.lookAt(targetX, targetY, cameraLookAtPostion?.z);
       camera.updateProjectionMatrix();
       this.cameraLookAtPostion = { x: targetX, y: targetY, z: cameraLookAtPostion?.z };
       return;
     }
 
-    animator.animate(
-      {
-        el: camera,
-        start: {
-          cameraPosition: { ...camera?.position },
-          cameraLookAt: { ...cameraLookAtPostion },
+    animator
+      .animate(
+        {
+          el: camera,
+          start: {
+            cameraPosition: { ...camera?.position },
+            cameraLookAt: { ...cameraLookAtPostion },
+          },
+          end: {
+            cameraPosition: { ...cameraTargetPosition },
+            cameraLookAt: { x: targetX, y: targetY, z: cameraLookAtPostion?.z },
+          },
         },
-        end: {
-          cameraPosition: { ...cameraTargetPosition },
-          cameraLookAt: { x: targetX, y: targetY, z: cameraLookAtPostion?.z },
-        },
-      },
-      ({ target: { el, start, end }, timing: { p } }) => {
-        camera.position.x = start.cameraPosition.x * (1 - p) + end.cameraPosition.x * p;
-        camera.position.y = start.cameraPosition.y * (1 - p) + end.cameraPosition.y * p;
+        ({ target: { el, start, end }, timing: { p } }) => {
+          camera.position.x = start.cameraPosition.x * (1 - p) + end.cameraPosition.x * p;
+          camera.position.y = start.cameraPosition.y * (1 - p) + end.cameraPosition.y * p;
 
-        camera.lookAt.x = start.cameraLookAt.x * (1 - p) + end.cameraLookAt.x * p;
-        camera.lookAt.y = start.cameraLookAt.y * (1 - p) + end.cameraLookAt.y * p;
-        camera.updateProjectionMatrix();
-        this.cameraLookAtPostion = { x: targetX, y: targetY, z: cameraLookAtPostion?.z };
-      }
-    ).then(res => {
-      console.log(res);
-      onComplete();
-    });
+          camera.lookAt.x = start.cameraLookAt.x * (1 - p) + end.cameraLookAt.x * p;
+          camera.lookAt.y = start.cameraLookAt.y * (1 - p) + end.cameraLookAt.y * p;
+          camera.updateProjectionMatrix();
+          this.cameraLookAtPostion = { x: targetX, y: targetY, z: cameraLookAtPostion?.z };
+        }
+      )
+      .then(res => {
+        // this.light.position.add(directionVector?.x, directionVector?.y);
+        this.render();
+        onComplete();
+      });
   }
 
   createPlane() {
