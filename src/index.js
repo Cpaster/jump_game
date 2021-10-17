@@ -5,7 +5,7 @@ function main() {
     canvas,
     helper: {
       axesHelpers: true,
-      cameraHelpers: true
+      cameraHelpers: false
     }
   }).start();
 }

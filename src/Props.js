@@ -36,7 +36,6 @@ class Props {
     box.geometry.translate(0, 0, propHeight / 2);
     box.position.set(x, y, 0);
     props.push(box);
-    this.enterStage(box);
     return box;
   }
 
@@ -77,7 +76,7 @@ class Props {
     }
   }
 
-  enterStage(args) {
+  enterStage(args, onCompleted = () => {}) {
     const { stage, propHeight } = this;
     stage.add(args);
     if (this.isInitStatus) {
@@ -94,13 +93,16 @@ class Props {
         },
       ],
       {
-        duration: 2,
+        duration: 5,
         times: [0, 1, 1.5, 2],
         values: [propHeight * 3, 0, propHeight / 6, 0],
         onUpdate: () => {
           stage.render();
         },
-        onComplete: () => {},
+        onComplete: () => {
+          stage.render();
+          onCompleted && onCompleted();
+        },
       }
     );
   }
@@ -112,6 +114,7 @@ class Props {
   getCurrentProp() {
     const { props } = this;
     const len = props?.length;
+    console.log(len);
     return len <= 2 ? props[0] : props[len - 2];
   }
 

@@ -22,9 +22,9 @@ class JumpGame {
 
   start() {
     const { props, littleMan, stage } = this;
-    props.createProp(stage, 0);
-    props.createProp(stage, 0);
-    stage.moveCamera();
+    props.enterStage(props.createProp(stage, 0));
+    props.enterStage(props.createProp(stage, 0));
+    stage.moveCamera(0);
     littleMan.createLittleMan();
     littleMan.enterStage(stage);
   }

@@ -161,8 +161,10 @@ class LittleMan {
 
     // 小人跳跃
     this.jump(() => {
-      // 跳跃完成添加道具
-      props.createProp();
+      // 跳跃结束添加道具
+      const box = props.createProp();
+      props.enterStage(box);
+      stage.moveCamera();
     });
 
     // 放松道具

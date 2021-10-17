@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { resizeRendererToDisplaySize } from './lib';
+import { Animation } from './lib/animation';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
@@ -62,12 +63,11 @@ class Stage {
     const { height, width, canvas, scene } = this;
     const far = width * 10;
     const camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, near, far);
-
+    const cameraLookAtPostion = (this.cameraLookAtPostion = scene.position);
     // 稍后调整相机位置
     camera.position.set(-width * 4, -height * 2, height * 2);
-    camera.lookAt(scene.position);
-    camera.up.set(10, 10, 100);
-    // camera.up.set(-width * 1.5, -height / 2, height / 2);
+    camera.up.set(0, 0, 1);
+    camera.lookAt(cameraLookAtPostion);
     this.camera = camera;
 
     if (this.cameraHelpers) {
@@ -82,10 +82,55 @@ class Stage {
     this.scene.add(camera);
   }
 
-  moveCamera() {
-    const { props } = this;
-    console.log(props.getNextProp().position);
-    console.log(props.getCurrentProp().position);
+  moveCamera(isStart, onComplete = () => {}) {
+    const { props, camera, cameraLookAtPostion } = this;
+    const { x: startPropX, y: startPropY } = props.getCurrentProp().position;
+    const { x: endPropX, y: endPropY } = props.getNextProp().position;
+    const targetX = Math.floor((endPropX + startPropX) / 2);
+    const targetY = Math.floor((endPropY + startPropY) / 2);
+
+    const { x: lookAtPostionX, y: lookAtPostionY } = cameraLookAtPostion;
+    const directionVector = { x: Math.floor(targetX - lookAtPostionX), y: Math.floor(targetY - lookAtPostionY) };
+    const { x: cameraPositionX, y: cameraPositionY, z } = camera.position;
+    const cameraTargetPosition = { x: Math.floor(cameraPositionX + directionVector.x), y: Math.floor(cameraPositionY + directionVector.y), z };
+    const animator = new Animation({
+      duration: 500,
+      iterations: 1,
+    });
+
+    if (isStart === 0) {
+      camera.position.set(cameraTargetPosition.x, cameraTargetPosition.y, cameraTargetPosition.z);
+      camera.lookAt(targetX, targetY, cameraLookAtPostion?.z );
+      camera.updateProjectionMatrix();
+      this.cameraLookAtPostion = { x: targetX, y: targetY, z: cameraLookAtPostion?.z };
+      return;
+    }
+
+    animator.animate(
+      {
+        el: camera,
+        start: {
+          cameraPosition: { ...camera?.position },
+          cameraLookAt: { ...cameraLookAtPostion },
+        },
+        end: {
+          cameraPosition: { ...cameraTargetPosition },
+          cameraLookAt: { x: targetX, y: targetY, z: cameraLookAtPostion?.z },
+        },
+      },
+      ({ target: { el, start, end }, timing: { p } }) => {
+        camera.position.x = start.cameraPosition.x * (1 - p) + end.cameraPosition.x * p;
+        camera.position.y = start.cameraPosition.y * (1 - p) + end.cameraPosition.y * p;
+
+        camera.lookAt.x = start.cameraLookAt.x * (1 - p) + end.cameraLookAt.x * p;
+        camera.lookAt.y = start.cameraLookAt.y * (1 - p) + end.cameraLookAt.y * p;
+        camera.updateProjectionMatrix();
+        this.cameraLookAtPostion = { x: targetX, y: targetY, z: cameraLookAtPostion?.z };
+      }
+    ).then(res => {
+      console.log(res);
+      onComplete();
+    });
   }
 
   createPlane() {
@@ -116,7 +161,7 @@ class Stage {
       const canvas = renderer.domElement;
       camera.aspect = canvas.clientWidth / canvas.clientHeight;
       camera.updateProjectionMatrix();
-      orbitControl.update();
+      orbitControl?.update();
     }
     renderer.render(scene, camera);
     if (mixer && clock) {
