@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils';
 import { animation } from './lib';
+import { Animation } from './lib/animation';
 import { getVectorAngle, subtract } from './lib/math';
 
 class LittleMan {
@@ -15,6 +16,7 @@ class LittleMan {
     this.isJumping = false;
     this.jumpAngle = Math.PI / 4;
     this.strength = 0;
+    this.isDeath = false;
     this.headerHeight = width * 0.25;
     this.G = 9.8;
     this.ratio = 1;
@@ -43,7 +45,14 @@ class LittleMan {
 
   createLittleManBody() {
     const { width, height, material, littleManMesh, stage } = this;
-    const bodyBottomGeo = new THREE.CylinderGeometry(width * 0.03, width * 0.06, Math.floor((width * 3) / 21), 50, 50);
+    const bodyBottomRadius = (this.bodyBottomRadius = width * 0.06);
+    const bodyBottomGeo = new THREE.CylinderGeometry(
+      width * 0.03,
+      bodyBottomRadius,
+      Math.floor((width * 3) / 21),
+      50,
+      50
+    );
     bodyBottomGeo.translate(0, Math.floor((width * 3) / 42), 0);
     const bodyMidGeo = new THREE.CylinderGeometry(width * 0.04, width * 0.03, Math.floor(width / 21), 50, 50);
     bodyMidGeo.translate(0, Math.floor((width * 3) / 21), 0);
@@ -161,10 +170,13 @@ class LittleMan {
 
     // 小人跳跃
     this.jump(() => {
-      // 跳跃结束添加道具
-      const box = props.createProp();
-      props.enterStage(box);
-      stage.moveCamera();
+      // 判断死没死
+      if (!this.judgeIsDeath()) {
+        // 跳跃结束添加道具
+        const box = props.createProp();
+        props.enterStage(box);
+        stage.moveCamera();
+      }
     });
 
     // 放松道具
@@ -194,13 +206,70 @@ class LittleMan {
     return angle;
   }
 
+  judgeIsDeath() {
+    let isDeath = true;
+    const { props, littleManMesh, bodyBottomRadius, stage } = this;
+    const prop = props.getNextProp();
+    const box = new THREE.Box3();
+    const size = new THREE.Vector3();
+    box.setFromObject(prop).getSize(size);
+    const { x: manPosX, y: manPosY, z: manPosZ } = littleManMesh.position;
+    const { x, y } = prop.position;
+    const w = size.x / 2;
+    const propTopPoint = y + w;
+    const propBottomPoint = y - w;
+    const propLeftPoint = x - w;
+    const propRightPoint = x + w;
+    if (
+      manPosX >= propLeftPoint &&
+      manPosX <= propRightPoint &&
+      manPosY >= propBottomPoint &&
+      manPosY <= propTopPoint
+    ) {
+      isDeath = false;
+    } else if (
+      manPosX <= propLeftPoint - bodyBottomRadius ||
+      manPosX >= propRightPoint + bodyBottomRadius ||
+      manPosY >= propTopPoint + bodyBottomRadius ||
+      manPosY <= propBottomPoint - bodyBottomRadius
+    ) {
+      new Animation({
+        duration: 200,
+        iterations: 1,
+      }).animate(
+        {
+          el: littleManMesh,
+          start: manPosZ,
+          end: 0,
+        },
+        ({ target: { el, start, end }, timing: { p } }) => {
+          el.position.z = start * (1 - p) + end * p;
+          stage.render();
+        }
+      );
+    } else {
+      const layDirection = [manPosY > propTopPoint, manPosY > propRightPoint, manPosY < propBottomPoint, manPosX < propLeftPoint]; // ['top', 'right', 'bottom', 'left'];
+      console.log(layDirection);
+    }
+    this.isDeath = isDeath;
+    return isDeath;
+  }
+
   bindEvent() {
     let startTime;
     window.addEventListener('touchstart', () => {
+      if (this.isDeath) {
+        console.log('death');
+        return;
+      }
       startTime = Number(new Date());
       this.energyStorage();
     });
     window.addEventListener('touchend', () => {
+      if (this.isDeath) {
+        console.log('death');
+        return;
+      }
       let strength = Math.floor((Number(new Date()) - startTime) / 10);
       this.strength = strength > 140 ? 140 : strength;
       this.releasetorage();

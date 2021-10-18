@@ -3,7 +3,7 @@ import { computeRandomFromRange, computeRandomFromArr, animation } from './lib';
 
 class Props {
   constructor({ world, canvas, stage, height, width }) {
-    const [min, max] = [Math.floor(width / 6), Math.floor(width / 3.5)];
+    const [min, max] = [Math.floor(width / 4), Math.floor(width / 2.5)];
     this.isInitStatus = null;
     this.animationFrameId = null;
     this.world = world;
