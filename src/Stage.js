@@ -85,12 +85,15 @@ class Stage {
 
   movePlaneAndLight(vector) {
     const { x, y } = vector;
-    const {x: positionx, y: positiony, z} = this.plane.position;
-    const {x: lightPostionX, y: lightPostionY} = this.light.position;
-    const {x: lighttargetX, y: lighttargetY} = this.light.target;
+    const { x: positionx, y: positiony, z } = this.plane.position;
+    const { x: lightPostionX, y: lightPostionY, z: lightPostionZ } = this.light.position;
+    const { x: lighttargetX, y: lighttargetY, z: lighttargetZ } = this.light?.target?.position;
     this.plane.position.set(positionx + x, positiony + y, z);
-    // this.light.position.set(lightPostionX + x, lightPostionY + y);
-    // this.light.target.set(lighttargetX + x, lighttargetY + y);
+    this.light.position.set(lightPostionX + x, lightPostionY + y, lightPostionZ);
+    let midTarget = new THREE.Object3D();
+    midTarget.position.set(lighttargetX + x, lighttargetY + y, lighttargetZ);
+    this.add(midTarget);
+    this.light.target = midTarget;
     this.render();
   }
 
@@ -147,7 +150,6 @@ class Stage {
         }
       )
       .then(res => {
-        // this.light.position.add(directionVector?.x, directionVector?.y);
         this.render();
         onComplete();
       });
