@@ -248,8 +248,32 @@ class LittleMan {
         }
       );
     } else {
-      const layDirection = [manPosY > propTopPoint, manPosY > propRightPoint, manPosY < propBottomPoint, manPosX < propLeftPoint]; // ['top', 'right', 'bottom', 'left'];
+      const layDirection = [
+        manPosY > propTopPoint,
+        manPosY > propRightPoint,
+        manPosY < propBottomPoint,
+        manPosX < propLeftPoint,
+      ]; // ['top', 'right', 'bottom', 'left'];
       console.log(layDirection);
+      new Animation({
+        duration: 500,
+        iterations: 1,
+      }).animate(
+        {
+          el: littleManMesh,
+          start: manPosZ,
+          end: 0,
+        },
+        ({ target: { el, start, end }, timing: { p } }) => {
+          el.position.z = start * (1 - p) + end * p;
+          if (layDirection[0] || layDirection[2]) {
+            el.rotation.x = p * (layDirection[0] ? -1 : 1) * Math.PI / 2;
+          } else if (layDirection[1] || layDirection[3]) {
+            el.rotation.y = p * (layDirection[1] ? 1 : -1) * Math.PI / 2;
+          }
+          stage.render();
+        }
+      );
     }
     this.isDeath = isDeath;
     return isDeath;
